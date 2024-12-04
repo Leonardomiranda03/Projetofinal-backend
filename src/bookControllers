@@ -1,15 +1,28 @@
 import { Request, Response } from 'express';
-import { BookRepository } from '../repositories/bookRepository';
+import { prisma } from '../config/database';
+import { validateBookTitle } from '../helpers/validationHelper';
 
-const bookRepository = new BookRepository();
-
-export const getAllBooks = async (req: Request, res: Response) => {
-  const books = await bookRepository.getAllBooks();
-  res.status(200).json(books);
+export const getBooks = async (req: Request, res: Response) => {
+  try {
+    const books = await prisma.book.findMany();
+    res.status(200).json(books);
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao buscar livros', err });
+  }
 };
 
 export const addBook = async (req: Request, res: Response) => {
-  const { title, author, price } = req.body;
-  const book = await bookRepository.addBook(title, author, price);
-  res.status(201).json(book);
+  const { error } = validateBookTitle(req.body);
+  if (error) return res.status(400).json({ message: error.details[0].message });
+
+  const { title, author, published } = req.body;
+
+  try {
+    const newBook = await prisma.book.create({
+      data: { title, author, published, userId: req.body.userId || 1 }, // User ID fixo para simplificar
+    });
+    res.status(201).json(newBook);
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao adicionar livro', err });
+  }
 };
