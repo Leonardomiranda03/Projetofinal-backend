@@ -1,1 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookstore</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input, button {
+      display: block;
+      margin: 10px 0;
+      padding: 8px;
+      width: 100%;
+    }
+    .book-list {
+      margin-top: 20px;
+    }
+    .book-item {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bookstore</h1>
+
+    <!-- Formulário de Login -->
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="Email" required>
+      <input type="password" id="login-password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+
+    <!-- Formulário para adicionar um livro -->
+    <h2>Add a New Book</h2>
+    <form id="book-form">
+      <input type="text" id="book-title" placeholder="Book Title" required>
+      <input type="text" id="book-author" placeholder="Author" required>
+      <input type="date" id="book-published" required>
+      <button type="submit">Add Book</button>
+    </form>
+
+    <!-- Lista de livros -->
+    <h2>Books</h2>
+    <div class="book-list" id="book-list"></div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api';
+
+    // Variável para armazenar o token JWT
+    let token = '';
+
+    // Função para fazer login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          token = data.token; // Armazena o token para futuras requisições
+          alert('Login successful!');
+        } else {
+          alert(data.message || 'Login failed!');
+        }
+      } catch (err) {
+        console.error('Error logging in:', err);
+        alert('An error occurred!');
+      }
+    });
+
+    // Função para adicionar um novo livro
+    document.getElementById('book-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('book-title').value;
+      const author = document.getElementById('book-author').value;
+      const published = document.getElementById('book-published').value;
+
+      try {
+        const response = await fetch(`${API_URL}/books`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ title, author, published }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          alert('Book added successfully!');
+          fetchBooks(); // Atualiza a lista de livros
+        } else {
+          alert(data.message || 'Failed to add book!');
+        }
+      } catch (err) {
+        console.error('Error adding book:', err);
+        alert('An error occurred!');
+      }
+    });
+
+    // Função para buscar e listar os livros
+    const fetchBooks = async () => {
+      try {
+        const response = await fetch(`${API_URL}/books`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const books = await response.json();
+        const bookList = document.getElementById('book-list');
+        bookList.innerHTML = '';
+
+        books.forEach((book) => {
+          const bookItem = document.createElement('div');
+          bookItem.className = 'book-item';
+          bookItem.innerHTML = `
+            <h3>${book.title}</h3>
+            <p><strong>Author:</strong> ${book.author}</p>
+            <p><strong>Published:</strong> ${new Date(book.published).toLocaleDateString()}</p>
+          `;
+          bookList.appendChild(bookItem);
+        });
+      } catch (err) {
+        console.error('Error fetching books:', err);
+        alert('Failed to load books!');
+      }
+    };
+
+    // Carrega os livros ao carregar a página
+    fetchBooks();
+  </script>
+</body>
+</html>
 
